@@ -1,0 +1,190 @@
+# =============================================================================
+# nutrition-tracker : root .gitignore
+#
+# Philosophy: PRIVATE BY DEFAULT.
+#   - Markdown is IGNORED unless it is on the allow-list in section 1.
+#   - Secrets, model files, personal data and generated output never go up.
+#
+# Verify any path with:   git check-ignore -v <path>
+# See everything ignored: git status --ignored
+#
+# WARNING: .gitignore only affects files git is not tracking yet.
+# If a file was ever committed, run:  git rm --cached <path>
+# If it contained a secret, rotate the secret; deleting it is not enough.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# 1. Markdown: default-deny, explicit allow-list
+# -----------------------------------------------------------------------------
+*.md
+
+# Public, intended-for-GitHub documents:
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!SECURITY.md
+!CODE_OF_CONDUCT.md
+!CHANGELOG.md
+!docs/public/**/*.md
+!.github/**/*.md
+
+# Never publish agent instruction files, even inside allowed folders
+.github/copilot-instructions.md
+
+
+# -----------------------------------------------------------------------------
+# 2. Private workspace and coding-agent configuration
+# -----------------------------------------------------------------------------
+# Plans, reports (test results + diffs), agent task prompts, review notes
+/.private/
+
+# Agent instruction files (also covered by *.md; listed for clarity)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+
+# Agent / assistant tool folders and rule files
+.cursorrules
+.cursor/
+.windsurfrules
+.windsurf/
+.claude/
+.gemini/
+.agent/
+.agents/
+.aider*
+.continue/
+
+
+# -----------------------------------------------------------------------------
+# 3. Secrets and signing material
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+keystore.properties
+key.properties
+
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+*credentials*.json
+*.secret
+secrets/
+
+
+# -----------------------------------------------------------------------------
+# 4. ML model files (downloaded at runtime; never committed)
+# -----------------------------------------------------------------------------
+*.litertlm
+*.task
+*.tflite
+*.gguf
+*.safetensors
+*.onnx
+models/
+
+
+# -----------------------------------------------------------------------------
+# 5. Food data, databases, evaluation data
+# -----------------------------------------------------------------------------
+# Raw downloads (USDA / IFCT / INDB) and ETL output. Licences differ per source;
+# only commit data whose licence you have verified.
+/data/raw/
+/data/build/
+
+# Any SQLite database file
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+# To ship a licence-clean (USDA-only) DB as an app asset, uncomment:
+# !app/assets/db/foods-usda.db
+
+# Personal meal photos, ground truth and benchmark/eval outputs
+/eval/datasets/
+/eval/results/
+/eval/private/
+
+# Loose reports / benchmark dumps (the canonical place is .private/reports/)
+/reports/
+bench-*.json
+logcat*.txt
+*.hprof
+
+
+# -----------------------------------------------------------------------------
+# 6. Node / Expo / React Native
+# -----------------------------------------------------------------------------
+node_modules/
+.expo/
+.expo-shared/
+web-build/
+expo-env.d.ts
+*.tsbuildinfo
+.eslintcache
+.metro-health-check*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+.nyc_output/
+junit.xml
+
+# Expo prebuild (CNG) output: regenerated from app config + local modules.
+# Remove these two lines ONLY if you start hand-editing the native projects.
+/app/android/
+/app/ios/
+
+
+# -----------------------------------------------------------------------------
+# 7. Android / Gradle / Kotlin build output
+#    (app/modules/**/android SOURCES are NOT ignored; only build output is)
+# -----------------------------------------------------------------------------
+.gradle/
+**/build/
+.cxx/
+.externalNativeBuild/
+local.properties
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+
+# -----------------------------------------------------------------------------
+# 8. Python (ETL and evaluation harness)
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+
+
+# -----------------------------------------------------------------------------
+# 9. OS / editor noise
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+*.swp
+*~
+*.log
+/tmp/
