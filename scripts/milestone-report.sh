@@ -2,8 +2,7 @@
 # milestone-report.sh : run every check and save results + diff for review.
 # Usage: scripts/milestone-report.sh <label e.g. M3> [base-branch=main]
 # Output: .private/reports/<label>/<timestamp>/   (gitignored)
-# Env:    GRADLE_TEST_TASK  Kotlin test task (default ":litert-gemma:testDebugUnitTest";
-#                           CONFIRM the real task name in M0 and update here)
+# Env:    GRADLE_TEST_TASK  Kotlin JVM test task (default ":app:testDebugUnitTest")
 # Does not use -e on purpose: we want every step's result, then a final exit code.
 set -uo pipefail
 
@@ -55,11 +54,13 @@ if [ -f app/package.json ]; then
     run_step "typecheck" typecheck.txt npm --prefix app run typecheck --silent
   else skip_step "typecheck" "no typecheck script"; fi
 
-  run_step "jest (unit+integration+component)" jest.txt \
-    npm --prefix app test -- --ci --coverage \
-      --coverageDirectory="$OUT/coverage" \
-      --coverageReporters=json-summary --coverageReporters=text-summary \
-      --json --outputFile="$OUT/jest.json"
+  if grep -q '"test"' app/package.json; then
+    run_step "jest (unit+integration+component)" jest.txt \
+      npm --prefix app test -- --ci --coverage \
+        --coverageDirectory="$OUT/coverage" \
+        --coverageReporters=json-summary --coverageReporters=text-summary \
+        --json --outputFile="$OUT/jest.json"
+  else skip_step "jest" "no test script"; fi
 else skip_step "app checks" "app/package.json missing"; fi
 
 if [ -d data/etl/tests ]; then
@@ -72,13 +73,13 @@ if [ -d eval/tests ]; then
     bash -c "cd eval && python3 -m pytest -q --junitxml='$OUT/pytest-eval.xml'"
 else skip_step "pytest eval" "no tests yet"; fi
 
-if [ -x app/android/gradlew ]; then
+if [ -f app/android/gradlew ]; then
   run_step "kotlin unit tests" gradle-test.txt \
-    bash -c "cd app/android && ./gradlew ${GRADLE_TEST_TASK:-:litert-gemma:testDebugUnitTest} --console=plain"
+    bash -c "cd app/android && bash ./gradlew ${GRADLE_TEST_TASK:-:app:testDebugUnitTest} --console=plain"
   mkdir -p "$OUT/kotlin-test-results"
-  find app/modules -path '*build/test-results*' -name '*.xml' \
+  find app/android -path '*build/test-results*' -name '*.xml' \
     -exec cp {} "$OUT/kotlin-test-results/" \; 2>/dev/null || true
-else skip_step "kotlin unit tests" "app/android not generated (run expo prebuild)"; fi
+else skip_step "kotlin unit tests" "app/android not initialized yet"; fi
 
 # ---- diff + commits ---------------------------------------------------------
 if git rev-parse --verify -q "$BASE" >/dev/null; then

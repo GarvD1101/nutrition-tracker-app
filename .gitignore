@@ -70,6 +70,9 @@ GEMINI.md
 *.pfx
 *.jks
 *.keystore
+# The RN template's debug keystore is a public default (password 'android');
+# CI debug-signed builds need it committed. Real release keystores stay ignored.
+!app/android/app/debug.keystore
 keystore.properties
 key.properties
 
@@ -96,8 +99,9 @@ models/
 # -----------------------------------------------------------------------------
 # 5. Food data, databases, evaluation data
 # -----------------------------------------------------------------------------
-# Raw downloads (USDA / IFCT / INDB) and ETL output. Licences differ per source;
-# only commit data whose licence you have verified.
+# Raw source downloads (USDA / IFCT / INDB) and intermediate ETL output (large;
+# regenerate with the ETL). The BUILT food DB that ships with the app is
+# un-ignored a few lines below.
 /data/raw/
 /data/build/
 
@@ -107,8 +111,8 @@ models/
 *.db-shm
 *.sqlite
 *.sqlite3
-# To ship a licence-clean (USDA-only) DB as an app asset, uncomment:
-# !app/assets/db/foods-usda.db
+# The built food DB ships as an app asset (CI builds the APK/AAB from it):
+!app/assets/db/foods.db
 
 # Personal meal photos, ground truth and benchmark/eval outputs
 /eval/datasets/
@@ -123,13 +127,9 @@ logcat*.txt
 
 
 # -----------------------------------------------------------------------------
-# 6. Node / Expo / React Native
+# 6. Node / React Native (bare CLI, no Expo)
 # -----------------------------------------------------------------------------
 node_modules/
-.expo/
-.expo-shared/
-web-build/
-expo-env.d.ts
 *.tsbuildinfo
 .eslintcache
 .metro-health-check*
@@ -140,15 +140,13 @@ coverage/
 .nyc_output/
 junit.xml
 
-# Expo prebuild (CNG) output: regenerated from app config + local modules.
-# Remove these two lines ONLY if you start hand-editing the native projects.
-/app/android/
-/app/ios/
+# NOTE: app/android/ is the real native project and IS committed.
+# Only its build output is ignored (see section 7).
 
 
 # -----------------------------------------------------------------------------
 # 7. Android / Gradle / Kotlin build output
-#    (app/modules/**/android SOURCES are NOT ignored; only build output is)
+#    (app/android SOURCES are committed; only build output is ignored)
 # -----------------------------------------------------------------------------
 .gradle/
 **/build/

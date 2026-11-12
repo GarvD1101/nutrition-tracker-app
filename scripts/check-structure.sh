@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # check-structure.sh : enforce STRUCTURE.md rules. Exit 1 on any violation.
 # Checks: (1) repo-root allow-list, (2) allowed src/ top-level folders,
-#         (3) file-length limits, (4) domain purity (no react/expo/native/data imports).
+#         (3) file-length limits, (4) domain purity (no react/react-native/navigation/native/data imports),
+#         (5) no Expo (R13).
 set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
@@ -25,7 +26,7 @@ for f in "${FILES[@]}"; do
 done
 
 # (2) allowed folders directly under app/src
-SRC_OK=" app features domain data native services ui config types "
+SRC_OK=" navigation screens features domain data native services ui config types "
 for f in "${FILES[@]}"; do
   if [[ "$f" == app/src/*/* ]]; then
     d="${f#app/src/}"; d="${d%%/*}"
@@ -42,7 +43,7 @@ for f in "${FILES[@]}"; do
     *__tests__/*|*.test.ts|*.test.tsx|app/test/*|*/src/test/*) continue ;;
   esac
   case "$f" in
-    app/src/*.ts|app/src/*.tsx|app/modules/*/src/*.ts) max=250 ;;
+    app/src/*.ts|app/src/*.tsx) max=250 ;;
     *.kt) max=300 ;;
     *) continue ;;
   esac
@@ -52,10 +53,18 @@ done
 
 # (4) domain purity
 if [[ -d app/src/domain ]]; then
-  hits=$(grep -rnE "from ['\"](react|react-native|expo[^'\"]*|@/(data|native|features|ui|services))|require\(['\"](react|react-native|expo)" \
+  hits=$(grep -rnE "from ['\"](react|react-native|@react-navigation[^'\"]*|expo[^'\"]*|@/(data|native|features|ui|services))|require\(['\"](react|react-native|expo)" \
          app/src/domain --include='*.ts' --include='*.tsx' 2>/dev/null | grep -vE "__tests__|\.test\." || true)
   [[ -n "$hits" ]] && err "domain/ must stay pure. Offending imports:"$'\n'"$hits"
 fi
+
+# (5) R13: no Expo
+if [[ -f app/package.json ]] && grep -qE '"(expo|expo-[a-z0-9-]+|eas-cli)"' app/package.json; then
+  err "Expo packages found in app/package.json (R13: bare React Native only)"
+fi
+for f in "${FILES[@]}"; do
+  case "$f" in app/eas.json|app/app.config.*) err "Expo file not allowed (R13): $f" ;; esac
+done
 
 if (( FAIL == 0 )); then echo "check-structure: OK"; fi
 exit $FAIL
