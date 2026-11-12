@@ -1,0 +1,10 @@
+npm --prefix app run lint-staged
+
+if [ "${SKIP_GITLEAKS:-0}" != "1" ]; then
+  if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "ERROR: gitleaks is required for pre-commit verification but was not found on PATH." >&2
+    echo "Install gitleaks (https://github.com/gitleaks/gitleaks) or bypass temporarily with SKIP_GITLEAKS=1." >&2
+    exit 1
+  fi
+  gitleaks protect --staged --verbose --config .gitleaks.toml
+fi
