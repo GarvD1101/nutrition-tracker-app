@@ -11,7 +11,34 @@ BASE="${2:-main}"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+# Auto-detect node if unset (common when running in WSL on Windows)
+if ! command -v node >/dev/null 2>&1; then
+  if [ -d "/mnt/c/nvm4w/nodejs" ]; then
+    export PATH="/mnt/c/nvm4w/nodejs:$PATH"
+  elif [ -d "/c/nvm4w/nodejs" ]; then
+    export PATH="/c/nvm4w/nodejs:$PATH"
+  fi
+fi
+
+# Auto-detect JAVA_HOME if unset
+if [ -z "${JAVA_HOME:-}" ]; then
+  if [ -d "/mnt/c/Program Files/Java/jdk-22" ]; then
+    export JAVA_HOME="/mnt/c/Program Files/Java/jdk-22"
+    export PATH="$JAVA_HOME/bin:$PATH"
+  elif [ -d "/c/Program Files/Java/jdk-22" ]; then
+    export JAVA_HOME="/c/Program Files/Java/jdk-22"
+    export PATH="$JAVA_HOME/bin:$PATH"
+  elif [ -d "/mnt/c/Program Files/Java/jdk-17" ]; then
+    export JAVA_HOME="/mnt/c/Program Files/Java/jdk-17"
+    export PATH="$JAVA_HOME/bin:$PATH"
+  elif [ -d "/c/Program Files/Java/jdk-17" ]; then
+    export JAVA_HOME="/c/Program Files/Java/jdk-17"
+    export PATH="$JAVA_HOME/bin:$PATH"
+  fi
+fi
+
 TS="$(date +%Y%m%d-%H%M%S)"
+OUT_REL=".private/reports/$LABEL/$TS"
 REPORTS="$ROOT/.private/reports/$LABEL"
 OUT="$REPORTS/$TS"
 mkdir -p "$OUT"
@@ -57,18 +84,18 @@ if [ -f app/package.json ]; then
   if grep -q '"test"' app/package.json; then
     run_step "jest (unit+integration+component)" jest.txt \
       npm --prefix app test -- --ci --coverage \
-        --coverageDirectory="$OUT/coverage" \
+        --coverageDirectory="../$OUT_REL/coverage" \
         --coverageReporters=json-summary --coverageReporters=text-summary \
-        --json --outputFile="$OUT/jest.json"
+        --json --outputFile="../$OUT_REL/jest.json"
   else skip_step "jest" "no test script"; fi
 else skip_step "app checks" "app/package.json missing"; fi
 
-if [ -d data/etl/tests ]; then
+if [ -d data/etl/tests ] && [ -n "$(find data/etl/tests -name 'test_*.py' 2>/dev/null)" ]; then
   run_step "pytest data/etl" pytest-etl.txt \
     bash -c "cd data/etl && python3 -m pytest -q --junitxml='$OUT/pytest-etl.xml'"
 else skip_step "pytest data/etl" "no tests yet"; fi
 
-if [ -d eval/tests ]; then
+if [ -d eval/tests ] && [ -n "$(find eval/tests -name 'test_*.py' 2>/dev/null)" ]; then
   run_step "pytest eval" pytest-eval.txt \
     bash -c "cd eval && python3 -m pytest -q --junitxml='$OUT/pytest-eval.xml'"
 else skip_step "pytest eval" "no tests yet"; fi
@@ -118,7 +145,7 @@ if [ -n "$PREV" ] && [ -f "$REPORTS/$PREV/summary.txt" ]; then
   diff -u "$REPORTS/$PREV/summary.txt" "$OUT/summary.txt" > "$OUT/vs-previous.txt" || true
 fi
 
-ln -sfn "$OUT" "$REPORTS/latest"
+ln -sfn "$OUT" "$REPORTS/latest" 2>/dev/null || true
 echo; cat "$OUT/summary.txt"
 echo; echo "Report saved to: $OUT"
 exit $FAIL
