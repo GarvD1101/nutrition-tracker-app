@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'm*/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks (Lint, Typecheck, Test, Structure)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm --prefix app ci
+
+      - name: Lint
+        run: npm --prefix app run lint
+
+      - name: Typecheck
+        run: npm --prefix app run typecheck
+
+      - name: Jest Unit & Integration Tests
+        run: npm --prefix app test -- --ci --coverage
+
+      - name: Structure Check (check-structure.sh)
+        run: bash scripts/check-structure.sh
+
+  android:
+    name: Android Build & JVM Tests
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@8df1039502a140fb607b34f704050d0e33156ce9 # v4.5.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@d156388eb14634020ada520001a38af292bbb840 # v4.1.0
+
+      - name: Install JS dependencies
+        run: npm --prefix app ci
+
+      - name: Make gradlew executable
+        run: chmod +x app/android/gradlew
+
+      - name: Run Kotlin JVM tests
+        run: cd app/android && ./gradlew testDebugUnitTest --console=plain
+
+      - name: Build Release APK (arm64-v8a)
+        run: cd app/android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --console=plain
+
+      - name: Build Release AAB (arm64-v8a)
+        run: cd app/android && ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a --console=plain
+
+      - name: Verify artifacts (T0.7 hygiene check)
+        run: |
+          echo "Verifying generated release packages..."
+          APK_FILE=$(find app/android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          AAB_FILE=$(find app/android/app/build/outputs/bundle/release -name "*.aab" | head -n 1)
+          if [ -z "$APK_FILE" ] || [ -z "$AAB_FILE" ]; then
+            echo "ERROR: Expected both APK and AAB build outputs to exist." >&2
+            exit 1
+          fi
+          echo "Found APK: $APK_FILE"
+          echo "Found AAB: $AAB_FILE"
+          # Ensure no secret files, test credentials or raw datasets are packaged
+          if unzip -l "$APK_FILE" | grep -iE '\.(litertlm|keystore|env)$'; then
+            echo "ERROR: Unwanted sensitive or model files found in APK!" >&2
+            exit 1
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: nutrition-tracker-release-apk
+          path: app/android/app/build/outputs/apk/release/*.apk
+          retention-days: 14
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: nutrition-tracker-release-aab
+          path: app/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 14
