@@ -4,3 +4,4 @@
 *.py text eol=lf
 *.sql text eol=lf
 *.gradle text eol=lf
+app/.husky/* text eol=lf

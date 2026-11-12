@@ -1,0 +1,11 @@
+title = "Nutrition Tracker gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+  '''app/android/app/debug\.keystore''',
+  '''\.private/'''
+]
