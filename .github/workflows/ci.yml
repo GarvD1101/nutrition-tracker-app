@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - 'm*/**'
   pull_request:
     branches:
       - main
@@ -20,6 +19,7 @@ jobs:
   checks:
     name: Checks (Lint, Typecheck, Test, Structure)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -50,6 +50,7 @@ jobs:
     name: Android Build & JVM Tests
     needs: checks
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -62,13 +63,13 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Set up JDK 17
-        uses: actions/setup-java@8df1039502a140fb607b34f704050d0e33156ce9 # v4.5.0
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@d156388eb14634020ada520001a38af292bbb840 # v4.1.0
+        uses: gradle/actions/setup-gradle@d156388eb19639ec20ade50009f3d199ce1e2808 # v4.1.0
 
       - name: Install JS dependencies
         run: npm --prefix app ci
@@ -77,7 +78,7 @@ jobs:
         run: chmod +x app/android/gradlew
 
       - name: Run Kotlin JVM tests
-        run: cd app/android && ./gradlew testDebugUnitTest --console=plain
+        run: cd app/android && ./gradlew :app:testDebugUnitTest --console=plain
 
       - name: Build Release APK (arm64-v8a)
         run: cd app/android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --console=plain
@@ -99,6 +100,10 @@ jobs:
           # Ensure no secret files, test credentials or raw datasets are packaged
           if unzip -l "$APK_FILE" | grep -iE '\.(litertlm|keystore|env)$'; then
             echo "ERROR: Unwanted sensitive or model files found in APK!" >&2
+            exit 1
+          fi
+          if unzip -l "$AAB_FILE" | grep -iE '\.(litertlm|keystore|env)$'; then
+            echo "ERROR: Unwanted sensitive or model files found in AAB!" >&2
             exit 1
           fi
 
