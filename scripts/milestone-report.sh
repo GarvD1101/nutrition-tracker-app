@@ -11,34 +11,7 @@ BASE="${2:-main}"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-# Auto-detect node if unset (common when running in WSL on Windows)
-if ! command -v node >/dev/null 2>&1; then
-  if [ -d "/mnt/c/nvm4w/nodejs" ]; then
-    export PATH="/mnt/c/nvm4w/nodejs:$PATH"
-  elif [ -d "/c/nvm4w/nodejs" ]; then
-    export PATH="/c/nvm4w/nodejs:$PATH"
-  fi
-fi
-
-# Auto-detect JAVA_HOME if unset
-if [ -z "${JAVA_HOME:-}" ]; then
-  if [ -d "/mnt/c/Program Files/Java/jdk-22" ]; then
-    export JAVA_HOME="/mnt/c/Program Files/Java/jdk-22"
-    export PATH="$JAVA_HOME/bin:$PATH"
-  elif [ -d "/c/Program Files/Java/jdk-22" ]; then
-    export JAVA_HOME="/c/Program Files/Java/jdk-22"
-    export PATH="$JAVA_HOME/bin:$PATH"
-  elif [ -d "/mnt/c/Program Files/Java/jdk-17" ]; then
-    export JAVA_HOME="/mnt/c/Program Files/Java/jdk-17"
-    export PATH="$JAVA_HOME/bin:$PATH"
-  elif [ -d "/c/Program Files/Java/jdk-17" ]; then
-    export JAVA_HOME="/c/Program Files/Java/jdk-17"
-    export PATH="$JAVA_HOME/bin:$PATH"
-  fi
-fi
-
 TS="$(date +%Y%m%d-%H%M%S)"
-OUT_REL=".private/reports/$LABEL/$TS"
 REPORTS="$ROOT/.private/reports/$LABEL"
 OUT="$REPORTS/$TS"
 mkdir -p "$OUT"
@@ -84,9 +57,9 @@ if [ -f app/package.json ]; then
   if grep -q '"test"' app/package.json; then
     run_step "jest (unit+integration+component)" jest.txt \
       npm --prefix app test -- --ci --coverage \
-        --coverageDirectory="../$OUT_REL/coverage" \
+        --coverageDirectory="$OUT/coverage" \
         --coverageReporters=json-summary --coverageReporters=text-summary \
-        --json --outputFile="../$OUT_REL/jest.json"
+        --json --outputFile="$OUT/jest.json"
   else skip_step "jest" "no test script"; fi
 else skip_step "app checks" "app/package.json missing"; fi
 

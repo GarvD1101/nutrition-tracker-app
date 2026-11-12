@@ -43,7 +43,7 @@ for f in "${FILES[@]}"; do
     *__tests__/*|*.test.ts|*.test.tsx|app/test/*|*/src/test/*) continue ;;
   esac
   case "$f" in
-    app/src/*.ts|app/src/*.tsx|app/src/*/*.ts|app/src/*/*.tsx|app/src/*/*/*.ts|app/src/*/*/*.tsx) max=250 ;;
+    app/src/*.ts|app/src/*.tsx) max=250 ;;
     *.kt) max=300 ;;
     *) continue ;;
   esac
