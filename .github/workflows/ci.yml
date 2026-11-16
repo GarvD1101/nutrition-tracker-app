@@ -80,6 +80,9 @@ jobs:
       - name: Run Kotlin JVM tests
         run: cd app/android && ./gradlew :app:testDebugUnitTest --console=plain
 
+      - name: Print resolved core dependencies
+        run: cd app/android && ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --console=plain | grep -E 'kotlin-stdlib|kotlin-reflect|coroutines|litertlm|gson' || true
+
       - name: Build Release APK (arm64-v8a)
         run: cd app/android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --console=plain
 

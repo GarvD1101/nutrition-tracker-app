@@ -1,0 +1,12 @@
+Analyze this food image. Identify all food and drink items present.
+Return ONLY a valid JSON object matching this schema:
+{
+  "items": [
+    {
+      "name": "string (food name)",
+      "state": "raw | cooked",
+      "grams": number (estimated weight in grams)
+    }
+  ]
+}
+Do not include markdown code fences or explanatory text.
